@@ -1,27 +1,23 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Dashboard</title>
-</head>
-<body>
-    <h2>Welcome, {{ session['username'] }}</h2>
-    <p>Total Expenses: ₹{{ total }}</p>
-    <a href="{{ url_for('add_expense') }}">Add New Expense</a>
-    <a href="{{ url_for('logout') }}">Logout</a>
-    <hr>
-    <h3>Your Expenses:</h3>
-    <table border="1">
-        <tr>
-            <th>Amount</th><th>Category</th><th>Description</th><th>Date</th>
-        </tr>
-        {% for e in expenses %}
-        <tr>
-            <td>₹{{ e.amount }}</td>
-            <td>{{ e.category }}</td>
-            <td>{{ e.description }}</td>
-            <td>{{ e.date.strftime('%Y-%m-%d') }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-</body>
-</html>
+@app.route('/dashboard')
+def dashboard():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    user_id = session['user_id']
+    expenses = Expense.query.filter_by(user_id=user_id).all()
+    total = sum(e.amount for e in expenses)
+
+    # Prepare data for Chart.js
+    category_data = {}
+    for e in expenses:
+        category_data[e.category] = category_data.get(e.category, 0) + e.amount
+
+    categories = list(category_data.keys())
+    amounts = list(category_data.values())
+
+    return render_template(
+        'dashboard.html',
+        expenses=expenses,
+        total=total,
+        categories=categories,
+        amounts=amounts
+    )
